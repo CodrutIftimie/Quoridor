@@ -1,3 +1,5 @@
 ﻿  Source.cpp
+d:\c++\quoridor\quoridor\source.cpp(150): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+d:\c++\quoridor\quoridor\source.cpp(162): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
   Quoridor.vcxproj -> D:\C++\Quoridor\Debug\Quoridor.exe
   Quoridor.vcxproj -> D:\C++\Quoridor\Debug\Quoridor.pdb (Partial PDB)

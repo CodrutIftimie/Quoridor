@@ -79,8 +79,10 @@ int main()
 	window.setFramerateLimit(45);
 	Texture MainBoard;
 	Texture PlayerTexture[2];
-	Texture WallOrangeTexture;
-	Texture WallBlueTexture;
+	Texture WallOrangeTextureH;
+	Texture WallOrangeTextureV;
+	Texture WallBlueTextureH;
+	Texture WallBlueTextureV;
 
 
 	unsigned int index;
@@ -96,8 +98,10 @@ int main()
 	MainBoard.loadFromFile("Resources/Main_Table.jpg");
 	PlayerTexture[0].loadFromFile("Resources/Player1.png");
 	PlayerTexture[1].loadFromFile("Resources/Player2.png");
-	WallOrangeTexture.loadFromFile("Resources/Wall-Orange-Horizontal.png");
-	WallBlueTexture.loadFromFile("Resources/Wall-Blue-Horizontal.png");
+	WallOrangeTextureH.loadFromFile("Resources/Wall-Orange-Horizontal.png");
+	WallOrangeTextureV.loadFromFile("Resources/Wall-Orange-Vertical.png");
+	WallBlueTextureH.loadFromFile("Resources/Wall-Blue-Horizontal.png");
+	WallBlueTextureV.loadFromFile("Resources/Wall-Blue-Vertical.png");
 
 	Sprite Board(MainBoard);
 	Sprite Player[2];
@@ -107,8 +111,8 @@ int main()
 	Sprite Wall[2][10];
 	for (index = 0; index < 10; index++)
 	{
-		Wall[0][index].setTexture(WallBlueTexture);
-		Wall[1][index].setTexture(WallOrangeTexture);
+		Wall[0][index].setTexture(WallBlueTextureH);
+		Wall[1][index].setTexture(WallOrangeTextureH);
 	}
 
 	Player[0].setPosition(364, 664);
@@ -124,7 +128,7 @@ int main()
 	bool boardMatrix[17][17] = { 0 };
 	bool playerTurn = false;
 	bool wallBeingPlaced = false;
-	bool click = false;
+	bool WallFacing = true;
 
 	while (window.isOpen())
 	{
@@ -161,7 +165,7 @@ int main()
 				{
 					if (wallBeingPlaced == true && isBoardClicked(window, event))
 					{
-						if (event.mouseButton.button == sf::Mouse::Left)
+						if (event.mouseButton.button == Mouse::Left)
 						{
 							int WallWidth = Wall[playerTurn][wallIndex[playerTurn]].getGlobalBounds().width;
 							int WallHeight = Wall[playerTurn][wallIndex[playerTurn]].getGlobalBounds().height;
@@ -171,6 +175,27 @@ int main()
 							playerTurn = !playerTurn;
 							wallBeingPlaced = false;
 						}
+					}
+					else if (wallBeingPlaced == true && event.mouseButton.button == Mouse::Right)
+					{
+						if (WallFacing == true)
+						{
+							if (playerTurn == true)
+								Wall[playerTurn][wallIndex[playerTurn]].setTexture(WallOrangeTextureV,1);
+							else Wall[playerTurn][wallIndex[playerTurn]].setTexture(WallBlueTextureV,1);
+							WallFacing = false;
+						}
+						else
+						{
+							if (playerTurn == true)
+								Wall[playerTurn][wallIndex[playerTurn]].setTexture(WallOrangeTextureH,1);
+							else Wall[playerTurn][wallIndex[playerTurn]].setTexture(WallBlueTextureH,1);
+							WallFacing = true;
+						}
+						int WallWidth = Wall[playerTurn][wallIndex[playerTurn]].getGlobalBounds().width;
+						int WallHeight = Wall[playerTurn][wallIndex[playerTurn]].getGlobalBounds().height;
+						Vector2i mousePos = Mouse::getPosition(window);
+						Wall[playerTurn][wallIndex[playerTurn]].setPosition(mousePos.x - WallWidth / 2, mousePos.y - WallHeight / 2);
 					}
 					break;
 				}
@@ -185,6 +210,7 @@ int main()
 					else if (wallBeingPlaced == false && isSpriteClicked(Wall[playerTurn][wallIndex[playerTurn]], window))
 					{
 						wallBeingPlaced = true;
+						WallFacing = true;
 						if(playerTurn == false && wallIndex[0]+1 < 10)
 							Wall[0][wallIndex[0] + 1].setPosition(799, 619);
 						else if(playerTurn == true && wallIndex[1] + 1 < 10)

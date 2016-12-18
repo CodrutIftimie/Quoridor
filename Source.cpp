@@ -3,7 +3,7 @@
 using namespace sf;
 #define JUMP 75
 
-void changePos(Sprite& player, Vector2f playerPosition, int direction) // 0 - LEFT | 1 - RIGHT | 2 - UP | 3 - DOWN
+void changePos(Sprite& player, Vector2i playerPosition, int direction) // 0 - LEFT | 1 - RIGHT | 2 - UP | 3 - DOWN
 {
 	if (direction == 0)
 	{
@@ -60,10 +60,23 @@ bool isInsideWall(Sprite Wall, RenderWindow &Window)
 		return true;
 	return false;
 }
+
+bool isAbleToMove(bool boardMatrix[17][17], Vector2i playerPos, int direction)
+{
+	if (direction == 0)
+		return boardMatrix[playerPos.x][playerPos.y - 1] == 0;
+	else if(direction == 1)
+		return boardMatrix[playerPos.x][playerPos.y + 1] == 0;
+	else if (direction == 2)
+		return boardMatrix[playerPos.x - 1][playerPos.y] == 0;
+	else if (direction == 3)
+		return boardMatrix[playerPos.x + 1][playerPos.y] == 0;
+	return false;
+}
 int main()
 {
 	RenderWindow window(VideoMode(1024, 800), "Quoridor Game", Style::Close | Style::Titlebar);
-	window.setFramerateLimit(30);
+	window.setFramerateLimit(45);
 	Texture MainBoard;
 	Texture PlayerTexture[2];
 	Texture WallOrangeTexture;
@@ -72,14 +85,13 @@ int main()
 
 	unsigned int index;
 	unsigned short wallIndex[2] = { 0 };
-	short board[9][9] = { 0 };
-	bool playerPosMtx[9][9] = { 0 };
-	playerPosMtx[0][4] = playerPosMtx[8][4] = 1;
 
-	Vector2f playerPosition;
-	Vector2f playerNewPosition;
-	Vector2f wallPosition;
-
+	Vector2i playerNewPosition;
+	Vector2i playerPosMatrix[2];
+	playerPosMatrix[0].x = 16;
+	playerPosMatrix[0].y = 8;
+	playerPosMatrix[1].x = 0;
+	playerPosMatrix[1].y = 8;
 
 	MainBoard.loadFromFile("Resources/Main_Table.jpg");
 	PlayerTexture[0].loadFromFile("Resources/Player1.png");
@@ -109,9 +121,11 @@ int main()
 		Wall[0][index].setPosition(1025, 619);
 	}
 
+	bool boardMatrix[17][17] = { 0 };
 	bool playerTurn = false;
 	bool wallBeingPlaced = false;
 	bool click = false;
+
 	while (window.isOpen())
 	{
 		Event event;
@@ -126,8 +140,10 @@ int main()
 				}
 				case Event::KeyPressed:
 				{
-					playerPosition = Player[playerTurn].getPosition();
-					if (((Keyboard::isKeyPressed(Keyboard::Left) && playerTurn == 0) || (Keyboard::isKeyPressed(Keyboard::A) && playerTurn == 1)) && wallBeingPlaced == false)
+					Vector2i playerPosition;
+					playerPosition.x = Player[playerTurn].getPosition().x;
+					playerPosition.y = Player[playerTurn].getPosition().y;
+					if (((Keyboard::isKeyPressed(Keyboard::Left) && playerTurn == 0) || (Keyboard::isKeyPressed(Keyboard::A) && playerTurn == 1)) && wallBeingPlaced == false && isAbleToMove(boardMatrix,playerPosition,0))
 						changePos(Player[playerTurn], playerPosition, 0);
 					else if (((Keyboard::isKeyPressed(Keyboard::Right) && playerTurn == 0) || (Keyboard::isKeyPressed(Keyboard::D) && playerTurn == 1)) && wallBeingPlaced == false)
 						changePos(Player[playerTurn], playerPosition, 1);
@@ -135,19 +151,22 @@ int main()
 						changePos(Player[playerTurn], playerPosition, 2);
 					else if (((Keyboard::isKeyPressed(Keyboard::Down) && playerTurn == 0) || (Keyboard::isKeyPressed(Keyboard::S) && playerTurn == 1)) && wallBeingPlaced == false)
 						changePos(Player[playerTurn], playerPosition, 3);
-					playerNewPosition = Player[playerTurn].getPosition();
+					playerNewPosition.x = Player[playerTurn].getPosition().x;
+					playerNewPosition.y = Player[playerTurn].getPosition().y;
 					if(playerNewPosition != playerPosition)
 						playerTurn = !playerTurn;
 					break;
 				}
 				case Event::MouseButtonReleased:
 				{
-					if (isInsideWall(Wall[playerTurn][wallIndex[playerTurn]],window) == false && wallBeingPlaced == true && isBoardClicked(window, event))
+					if (wallBeingPlaced == true && isBoardClicked(window, event))
 					{
 						if (event.mouseButton.button == sf::Mouse::Left)
 						{
+							int WallWidth = Wall[playerTurn][wallIndex[playerTurn]].getGlobalBounds().width;
+							int WallHeight = Wall[playerTurn][wallIndex[playerTurn]].getGlobalBounds().height;
 							Vector2i mousePos = Mouse::getPosition(window);
-							Wall[playerTurn][wallIndex[playerTurn]].setPosition(mousePos.x, mousePos.y);
+							Wall[playerTurn][wallIndex[playerTurn]].setPosition(mousePos.x - WallWidth / 2, mousePos.y - WallHeight / 2);
 							wallIndex[playerTurn]++;
 							playerTurn = !playerTurn;
 							wallBeingPlaced = false;
@@ -158,15 +177,18 @@ int main()
 				default: {
 					if (wallBeingPlaced == true)
 					{
+						int WallWidth = Wall[playerTurn][wallIndex[playerTurn]].getGlobalBounds().width;
+						int WallHeight = Wall[playerTurn][wallIndex[playerTurn]].getGlobalBounds().height;
 						Vector2i mousePos = Mouse::getPosition(window);
-						Wall[playerTurn][wallIndex[playerTurn]].setPosition(mousePos.x, mousePos.y);
+						Wall[playerTurn][wallIndex[playerTurn]].setPosition(mousePos.x - WallWidth / 2, mousePos.y - WallHeight / 2);
 					}
 					else if (wallBeingPlaced == false && isSpriteClicked(Wall[playerTurn][wallIndex[playerTurn]], window))
 					{
 						wallBeingPlaced = true;
-						if(playerTurn == false)
+						if(playerTurn == false && wallIndex[0]+1 < 10)
 							Wall[0][wallIndex[0] + 1].setPosition(799, 619);
-						else Wall[1][wallIndex[1] + 1].setPosition(799, 169);
+						else if(playerTurn == true && wallIndex[1] + 1 < 10)
+							Wall[1][wallIndex[1] + 1].setPosition(799, 169);
 					}
 					break; 
 				}

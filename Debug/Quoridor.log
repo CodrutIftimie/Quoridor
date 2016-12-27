@@ -1,20 +1,20 @@
 ﻿  Source.cpp
-d:\c++\quoridor\quoridor\source.cpp(11): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-d:\c++\quoridor\quoridor\source.cpp(16): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-d:\c++\quoridor\quoridor\source.cpp(21): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-d:\c++\quoridor\quoridor\source.cpp(26): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-d:\c++\quoridor\quoridor\source.cpp(148): warning C4244: '=': conversion from 'const float' to 'int', possible loss of data
-d:\c++\quoridor\quoridor\source.cpp(149): warning C4244: '=': conversion from 'const float' to 'int', possible loss of data
-d:\c++\quoridor\quoridor\source.cpp(158): warning C4244: '=': conversion from 'const float' to 'int', possible loss of data
-d:\c++\quoridor\quoridor\source.cpp(159): warning C4244: '=': conversion from 'const float' to 'int', possible loss of data
-d:\c++\quoridor\quoridor\source.cpp(170): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
-d:\c++\quoridor\quoridor\source.cpp(171): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
-d:\c++\quoridor\quoridor\source.cpp(173): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-d:\c++\quoridor\quoridor\source.cpp(195): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
-d:\c++\quoridor\quoridor\source.cpp(196): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
-d:\c++\quoridor\quoridor\source.cpp(198): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-d:\c++\quoridor\quoridor\source.cpp(205): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
-d:\c++\quoridor\quoridor\source.cpp(206): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
+d:\c++\quoridor\quoridor\source.cpp(88): warning C4244: '=': conversion from 'const float' to 'int', possible loss of data
+d:\c++\quoridor\quoridor\source.cpp(89): warning C4244: '=': conversion from 'const float' to 'int', possible loss of data
+d:\c++\quoridor\quoridor\source.cpp(113): warning C4244: '=': conversion from 'const float' to 'int', possible loss of data
+d:\c++\quoridor\quoridor\source.cpp(114): warning C4244: '=': conversion from 'const float' to 'int', possible loss of data
+d:\c++\quoridor\quoridor\source.cpp(125): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
+d:\c++\quoridor\quoridor\source.cpp(126): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
+d:\c++\quoridor\quoridor\source.cpp(128): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+d:\c++\quoridor\quoridor\source.cpp(150): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
+d:\c++\quoridor\quoridor\source.cpp(151): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
+d:\c++\quoridor\quoridor\source.cpp(153): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+d:\c++\quoridor\quoridor\source.cpp(160): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
+d:\c++\quoridor\quoridor\source.cpp(161): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
+d:\c++\quoridor\quoridor\source.cpp(163): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+d:\c++\quoridor\quoridor\source.cpp(200): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
 d:\c++\quoridor\quoridor\source.cpp(208): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+d:\c++\quoridor\quoridor\source.cpp(216): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+d:\c++\quoridor\quoridor\source.cpp(224): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
   Quoridor.vcxproj -> D:\C++\Quoridor\Debug\Quoridor.exe
   Quoridor.vcxproj -> D:\C++\Quoridor\Debug\Quoridor.pdb (Partial PDB)

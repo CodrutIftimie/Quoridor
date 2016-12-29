@@ -12,7 +12,7 @@ bool isSpriteClicked(Sprite Wall, RenderWindow &Window);
 bool isBoardClicked(RenderWindow &Window, Event event);
 bool isInsideWall(Sprite Wall, RenderWindow &Window);
 bool isAbleToMove(bool boardMatrix[17][17], Vector2i &playerPos, int direction);
-
+void wallPlacementPrediction(Vector2i mousePos, Vector2i &prediction);
 int main()
 {
 	RenderWindow window(VideoMode(950, 730), "Quoridor Game", Style::Close | Style::Titlebar);
@@ -23,6 +23,8 @@ int main()
 	Texture WallOrangeTextureV;
 	Texture WallBlueTextureH;
 	Texture WallBlueTextureV;
+	Texture WallPlacementTextureH;
+	Texture WallPlacementTextureV;
 
 
 	unsigned int index;
@@ -30,6 +32,7 @@ int main()
 
 	Vector2i playerNewPosition;
 	Vector2i playerPosMatrix[2];
+	Vector2i WallPrediction;
 	playerPosMatrix[0].x = 8;
 	playerPosMatrix[0].y = 16;
 	playerPosMatrix[1].x = 8;
@@ -42,13 +45,19 @@ int main()
 	WallOrangeTextureV.loadFromFile("Resources/Wall-Orange-Vertical.png");
 	WallBlueTextureH.loadFromFile("Resources/Wall-Blue-Horizontal.png");
 	WallBlueTextureV.loadFromFile("Resources/Wall-Blue-Vertical.png");
+	WallPlacementTextureH.loadFromFile("Resources/Wall-Position-Horizontal.png");
+	WallPlacementTextureV.loadFromFile("Resources/Wall-Position-Vertical.png");
 
 	Sprite Board(MainBoard);
 	Sprite Player[2];
+	Sprite Wall[2][10];
+	Sprite WallPlacement;
+	WallPlacement.setPosition(1000, 1000);
+	WallPlacement.setTexture(WallPlacementTextureH);
 
 	Player[0].setTexture(PlayerTexture[0]);
 	Player[1].setTexture(PlayerTexture[1]);
-	Sprite Wall[2][10];
+	
 	for (index = 0; index < 10; index++)
 	{
 		Wall[0][index].setTexture(WallBlueTextureH);
@@ -125,10 +134,23 @@ int main()
 							int WallWidth = Wall[playerTurn][wallIndex[playerTurn]].getGlobalBounds().width;
 							int WallHeight = Wall[playerTurn][wallIndex[playerTurn]].getGlobalBounds().height;
 							Vector2i mousePos = Mouse::getPosition(window);
-							Wall[playerTurn][wallIndex[playerTurn]].setPosition(mousePos.x - WallWidth / 2, mousePos.y - WallHeight / 2);
+							Wall[playerTurn][wallIndex[playerTurn]].setPosition(WallPrediction.x * 77 + 19 - WallWidth / 2, WallPrediction.y * 77 + 19 - WallHeight / 2);
 							wallIndex[playerTurn]++;
 							playerTurn = !playerTurn;
 							wallBeingPlaced = false;
+							WallPlacement.setPosition(1000 , 1000);
+							WallPlacement.setTexture(WallPlacementTextureH, 1);
+							boardMatrix[(WallPrediction.x - 1) * 2][(WallPrediction.y - 1) * 2]=true;
+							if (WallFacing == true)
+							{
+								boardMatrix[(WallPrediction.x - 1) * 2 + 1][(WallPrediction.y - 1) * 2] = true;
+								boardMatrix[(WallPrediction.x - 1) * 2 - 1][(WallPrediction.y - 1) * 2] = true;
+							}
+							else
+							{
+								boardMatrix[(WallPrediction.x - 1) * 2][(WallPrediction.y - 1) * 2+1] = true;
+								boardMatrix[(WallPrediction.x - 1) * 2][(WallPrediction.y - 1) * 2-1] = true;
+							}
 						}
 					}
 					else if (wallBeingPlaced == true && event.mouseButton.button == Mouse::Right)
@@ -139,6 +161,7 @@ int main()
 								Wall[playerTurn][wallIndex[playerTurn]].setTexture(WallOrangeTextureV,1);
 							else Wall[playerTurn][wallIndex[playerTurn]].setTexture(WallBlueTextureV,1);
 							WallFacing = false;
+							WallPlacement.setTexture(WallPlacementTextureV, 1);
 						}
 						else
 						{
@@ -146,6 +169,7 @@ int main()
 								Wall[playerTurn][wallIndex[playerTurn]].setTexture(WallOrangeTextureH,1);
 							else Wall[playerTurn][wallIndex[playerTurn]].setTexture(WallBlueTextureH,1);
 							WallFacing = true;
+							WallPlacement.setTexture(WallPlacementTextureH, 1);
 						}
 						int WallWidth = Wall[playerTurn][wallIndex[playerTurn]].getGlobalBounds().width;
 						int WallHeight = Wall[playerTurn][wallIndex[playerTurn]].getGlobalBounds().height;
@@ -161,6 +185,8 @@ int main()
 						int WallHeight = Wall[playerTurn][wallIndex[playerTurn]].getGlobalBounds().height;
 						Vector2i mousePos = Mouse::getPosition(window);
 						Wall[playerTurn][wallIndex[playerTurn]].setPosition(mousePos.x - WallWidth / 2, mousePos.y - WallHeight / 2);
+						wallPlacementPrediction(mousePos, WallPrediction);
+						WallPlacement.setPosition(WallPrediction.x*77+19 - WallWidth / 2, WallPrediction.y*77+19 - WallHeight / 2);
 					}
 					else if (wallBeingPlaced == false && isSpriteClicked(Wall[playerTurn][wallIndex[playerTurn]], window))
 					{
@@ -177,6 +203,7 @@ int main()
 		}
 		window.clear();
 		window.draw(Board);
+		window.draw(WallPlacement);
 		for (index = 9; index > 0; index--)
 		{
 			window.draw(Wall[1][index]);
@@ -274,4 +301,15 @@ bool isAbleToMove(bool boardMatrix[17][17], Vector2i &playerPos, int direction)
 		case DOWN:  { return boardMatrix[playerPos.x][playerPos.y + 1] == false; break; }
 		default:    { return false; break; }
 	}
+}
+
+void wallPlacementPrediction(Vector2i mousePos,Vector2i &prediction)
+{
+	prediction.x = (mousePos.x+19) / 77;
+	prediction.y = (mousePos.y+19) / 77;
+	if (prediction.x < 1) prediction.x = 1;
+	if (prediction.x > 8) prediction.x = 8;
+	if (prediction.y < 1) prediction.y = 1;
+	if (prediction.y > 8) prediction.y = 8;
+
 }

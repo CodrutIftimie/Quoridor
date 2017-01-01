@@ -11,8 +11,9 @@ void changePos(Sprite& player, Vector2i playerPosition, Vector2i &playerPosMatri
 bool isSpriteClicked(Sprite Wall, RenderWindow &Window);
 bool isBoardClicked(RenderWindow &Window, Event event);
 bool isInsideWall(Sprite Wall, RenderWindow &Window);
-bool isAbleToMove(bool boardMatrix[17][17], Vector2i &playerPos, int direction);
+bool isAbleToMove(bool boardMatrix[17][17], Vector2i playerPos, int direction);
 void wallPlacementPrediction(Vector2i mousePos, Vector2i &prediction);
+bool isAllowedToPlaceWall(bool boardMatrix[17][17], Vector2i prediction, bool wallFacing);
 int main()
 {
 	RenderWindow window(VideoMode(950, 730), "Quoridor Game", Style::Close | Style::Titlebar);
@@ -129,7 +130,7 @@ int main()
 				{
 					if (wallBeingPlaced == true && isBoardClicked(window, event))
 					{
-						if (event.mouseButton.button == Mouse::Left)
+						if (event.mouseButton.button == Mouse::Left && isAllowedToPlaceWall(boardMatrix,WallPrediction,WallFacing))
 						{
 							int WallWidth = Wall[playerTurn][wallIndex[playerTurn]].getGlobalBounds().width;
 							int WallHeight = Wall[playerTurn][wallIndex[playerTurn]].getGlobalBounds().height;
@@ -140,17 +141,26 @@ int main()
 							wallBeingPlaced = false;
 							WallPlacement.setPosition(1000 , 1000);
 							WallPlacement.setTexture(WallPlacementTextureH, 1);
-							boardMatrix[(WallPrediction.x - 1) * 2][(WallPrediction.y - 1) * 2]=true;
+							std::cout << WallPrediction.x << " " << WallPrediction.y << std::endl;
 							if (WallFacing == true)
 							{
-								boardMatrix[(WallPrediction.x - 1) * 2 + 1][(WallPrediction.y - 1) * 2] = true;
-								boardMatrix[(WallPrediction.x - 1) * 2 - 1][(WallPrediction.y - 1) * 2] = true;
+								boardMatrix[WallPrediction.y * 2 - 1][WallPrediction.x * 2 - 2] = true;
+								boardMatrix[WallPrediction.y * 2 - 1][WallPrediction.x * 2 - 1] = true;
+								boardMatrix[WallPrediction.y * 2 - 1][WallPrediction.x * 2] = true;
 							}
 							else
 							{
-								boardMatrix[(WallPrediction.x - 1) * 2][(WallPrediction.y - 1) * 2+1] = true;
-								boardMatrix[(WallPrediction.x - 1) * 2][(WallPrediction.y - 1) * 2-1] = true;
+								boardMatrix[WallPrediction.y * 2 - 2][WallPrediction.x * 2 - 1] = true;
+								boardMatrix[WallPrediction.y * 2 - 1][WallPrediction.x * 2 - 1] = true;
+								boardMatrix[WallPrediction.y * 2][WallPrediction.x * 2 - 1] = true;
 							}
+							for (int i = 0; i < 16; i++)
+							{
+								for (int j = 0; j < 16; j++)
+									std::cout << boardMatrix[i][j] << " ";
+								std::cout << std::endl;
+							}
+
 						}
 					}
 					else if (wallBeingPlaced == true && event.mouseButton.button == Mouse::Right)
@@ -225,7 +235,7 @@ void changePos(Sprite& player, Vector2i playerPosition, Vector2i &playerPosMatri
 		if (playerPosition.x - JUMP >= 0 && playerPosition.x - JUMP <= 700)
 		{
 			player.setPosition(playerPosition.x - JUMP, playerPosition.y);
-			playerPosMatrix.x -= 1;
+			playerPosMatrix.x -= 2;
 		}
 	}
 	else if (direction == RIGHT)
@@ -233,7 +243,7 @@ void changePos(Sprite& player, Vector2i playerPosition, Vector2i &playerPosMatri
 		if (playerPosition.x + JUMP >= 0 && playerPosition.x + JUMP <= 700)
 		{
 			player.setPosition(playerPosition.x + JUMP, playerPosition.y);
-			playerPosMatrix.x += 1;
+			playerPosMatrix.x += 2;
 		}
 	}
 	else if (direction == UP)
@@ -241,7 +251,7 @@ void changePos(Sprite& player, Vector2i playerPosition, Vector2i &playerPosMatri
 		if (playerPosition.y - JUMP >= 0 && playerPosition.y - JUMP <= 700)
 		{
 			player.setPosition(playerPosition.x, playerPosition.y - JUMP);
-			playerPosMatrix.y -= 1;
+			playerPosMatrix.y -= 2;
 		}
 	}
 	else if (direction == DOWN)
@@ -249,7 +259,7 @@ void changePos(Sprite& player, Vector2i playerPosition, Vector2i &playerPosMatri
 		if (playerPosition.y + JUMP >= 0 && playerPosition.y + JUMP <= 700)
 		{
 			player.setPosition(playerPosition.x, playerPosition.y + JUMP);
-			playerPosMatrix.y += 1;
+			playerPosMatrix.y += 2;
 		}
 	}
 }
@@ -291,14 +301,14 @@ bool isInsideWall(Sprite Wall, RenderWindow &Window)
 	return false;
 }
 
-bool isAbleToMove(bool boardMatrix[17][17], Vector2i &playerPos, int direction)
+bool isAbleToMove(bool boardMatrix[17][17], Vector2i playerPos, int direction)
 {
 	switch (direction)
 	{
-		case LEFT:  { return boardMatrix[playerPos.x - 1][playerPos.y] == false; break; }
-		case RIGHT: { return boardMatrix[playerPos.x + 1][playerPos.y] == false; break; }
-		case UP:    { return boardMatrix[playerPos.x][playerPos.y - 1] == false; break; }
-		case DOWN:  { return boardMatrix[playerPos.x][playerPos.y + 1] == false; break; }
+		case LEFT:  { return boardMatrix[playerPos.y][playerPos.x - 1] == false; break; }
+		case RIGHT: { return boardMatrix[playerPos.y][playerPos.x + 1] == false; break; }
+		case UP:    { return boardMatrix[playerPos.y - 1][playerPos.x] == false; break; }
+		case DOWN:  { return boardMatrix[playerPos.y + 1][playerPos.x] == false; break; }
 		default:    { return false; break; }
 	}
 }
@@ -312,4 +322,27 @@ void wallPlacementPrediction(Vector2i mousePos,Vector2i &prediction)
 	if (prediction.y < 1) prediction.y = 1;
 	if (prediction.y > 8) prediction.y = 8;
 
+}
+
+bool isAllowedToPlaceWall(bool boardMatrix[17][17], Vector2i prediction, bool wallFacing)
+{
+	if (wallFacing == true)
+	{
+		if (boardMatrix[prediction.y * 2 - 1][prediction.x * 2 - 2] == true)
+			return false;
+		if (boardMatrix[prediction.y * 2 - 1][prediction.x * 2 - 1] == true)
+			return false;
+		if (boardMatrix[prediction.y * 2 - 1][prediction.x * 2] == true)
+			return false;
+	}
+	else
+	{
+		if (boardMatrix[prediction.y * 2 - 2][prediction.x * 2 - 1] == true)
+			return false;
+		if (boardMatrix[prediction.y * 2 - 1][prediction.x * 2 - 1] == true)
+			return false;
+		if (boardMatrix[prediction.y * 2][prediction.x * 2 - 1] == true)
+			return false;
+	}
+	return true;
 }

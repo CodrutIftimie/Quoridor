@@ -7,13 +7,14 @@ using namespace sf;
 #define UP 2
 #define DOWN 3
 
-void changePos(Sprite& player, Vector2i playerPosition, Vector2i &playerPosMatrix, int direction);
+void changePos(Sprite& player, Vector2i playerPosition, Vector2i &playerPosMatrix,Vector2i player2pos,bool boardMatrix[17][17], int direction);
 bool isSpriteClicked(Sprite Wall, RenderWindow &Window);
 bool isBoardClicked(RenderWindow &Window, Event event);
 bool isInsideWall(Sprite Wall, RenderWindow &Window);
 bool isAbleToMove(bool boardMatrix[17][17], Vector2i playerPos, int direction);
 void wallPlacementPrediction(Vector2i mousePos, Vector2i &prediction);
 bool isAllowedToPlaceWall(bool boardMatrix[17][17], Vector2i prediction, bool wallFacing);
+
 int main()
 {
 	RenderWindow window(VideoMode(950, 730), "Quoridor Game", Style::Close | Style::Titlebar);
@@ -99,29 +100,34 @@ int main()
 					playerPosition.y = Player[playerTurn].getPosition().y;
 					if (wallBeingPlaced == false)
 					{
-						if ((Keyboard::isKeyPressed(Keyboard::Left) && playerTurn == 0 && isAbleToMove(boardMatrix, playerPosMatrix[0], LEFT))
-							|| (Keyboard::isKeyPressed(Keyboard::A) && playerTurn == 1 && isAbleToMove(boardMatrix, playerPosMatrix[1], LEFT)))
+						if ((Keyboard::isKeyPressed(Keyboard::Left) && playerTurn == 0)
+							|| (Keyboard::isKeyPressed(Keyboard::A) && playerTurn == 1 ))
 						{
-							changePos(Player[playerTurn], playerPosition, playerPosMatrix[playerTurn], LEFT);
+							changePos(Player[playerTurn], playerPosition, playerPosMatrix[playerTurn], playerPosMatrix[!playerTurn], boardMatrix, LEFT);
 						}
-						else if ((Keyboard::isKeyPressed(Keyboard::Right) && playerTurn == 0 && isAbleToMove(boardMatrix, playerPosMatrix[0], RIGHT))
-							|| (Keyboard::isKeyPressed(Keyboard::D) && playerTurn == 1 && isAbleToMove(boardMatrix, playerPosMatrix[1], RIGHT)))
+						else if ((Keyboard::isKeyPressed(Keyboard::Right) && playerTurn == 0)
+							|| (Keyboard::isKeyPressed(Keyboard::D) && playerTurn == 1))
 						{
-							changePos(Player[playerTurn], playerPosition, playerPosMatrix[playerTurn], RIGHT);
+							changePos(Player[playerTurn], playerPosition, playerPosMatrix[playerTurn], playerPosMatrix[!playerTurn], boardMatrix, RIGHT);
 						}
-						else if ((Keyboard::isKeyPressed(Keyboard::Up) && playerTurn == 0 && isAbleToMove(boardMatrix, playerPosMatrix[0], UP))
-							|| (Keyboard::isKeyPressed(Keyboard::W) && playerTurn == 1 && isAbleToMove(boardMatrix, playerPosMatrix[1], UP)))
+						else if ((Keyboard::isKeyPressed(Keyboard::Up) && playerTurn == 0)
+							|| (Keyboard::isKeyPressed(Keyboard::W) && playerTurn == 1))
 						{
-							changePos(Player[playerTurn], playerPosition, playerPosMatrix[playerTurn], UP);
+							changePos(Player[playerTurn], playerPosition, playerPosMatrix[playerTurn], playerPosMatrix[!playerTurn], boardMatrix, UP);
 						}
-						else if ((Keyboard::isKeyPressed(Keyboard::Down) && playerTurn == 0 && isAbleToMove(boardMatrix, playerPosMatrix[0], DOWN))
-							|| (Keyboard::isKeyPressed(Keyboard::S) && playerTurn == 1 && isAbleToMove(boardMatrix, playerPosMatrix[1], DOWN)))
+						else if ((Keyboard::isKeyPressed(Keyboard::Down) && playerTurn == 0)
+							|| (Keyboard::isKeyPressed(Keyboard::S) && playerTurn == 1))
 						{
-							changePos(Player[playerTurn], playerPosition, playerPosMatrix[playerTurn], DOWN);
+							changePos(Player[playerTurn], playerPosition, playerPosMatrix[playerTurn], playerPosMatrix[!playerTurn], boardMatrix, DOWN);
 						}
 					}
 					playerNewPosition.x = Player[playerTurn].getPosition().x;
 					playerNewPosition.y = Player[playerTurn].getPosition().y;
+					if (playerPosMatrix[0].y == 0)
+						printf("PLayer 1 wins !");
+					else
+						if (playerPosMatrix[1].y == 16)
+							printf("PLayer 2 wins !");
 					if(playerNewPosition != playerPosition)
 						playerTurn = !playerTurn;
 					break;
@@ -154,9 +160,9 @@ int main()
 								boardMatrix[WallPrediction.y * 2 - 1][WallPrediction.x * 2 - 1] = true;
 								boardMatrix[WallPrediction.y * 2][WallPrediction.x * 2 - 1] = true;
 							}
-							for (int i = 0; i < 16; i++)
+							for (int i = 0; i < 17; i++)
 							{
-								for (int j = 0; j < 16; j++)
+								for (int j = 0; j < 17; j++)
 									std::cout << boardMatrix[i][j] << " ";
 								std::cout << std::endl;
 							}
@@ -228,38 +234,79 @@ int main()
 	return 0;
 }
 
-void changePos(Sprite& player, Vector2i playerPosition, Vector2i &playerPosMatrix, int direction)
+void changePos(Sprite& player, Vector2i playerPosition, Vector2i &playerPosMatrix,Vector2i player2pos, bool boardMatrix[17][17], int direction)
 {
+	Vector2i nextPos=playerPosMatrix;
 	if (direction == LEFT)
 	{
 		if (playerPosition.x - JUMP >= 0 && playerPosition.x - JUMP <= 700)
 		{
-			player.setPosition(playerPosition.x - JUMP, playerPosition.y);
-			playerPosMatrix.x -= 2;
+			nextPos.x -= 2;
+			if (nextPos == player2pos && isAbleToMove(boardMatrix,nextPos,direction) && isAbleToMove(boardMatrix, playerPosMatrix, direction))
+			{
+				player.setPosition(playerPosition.x - (2*JUMP), playerPosition.y);
+				playerPosMatrix.x -= 4;
+			}
+			else
+				if (isAbleToMove(boardMatrix, playerPosMatrix, direction) && nextPos != player2pos)
+			{
+				player.setPosition(playerPosition.x - JUMP, playerPosition.y);
+				playerPosMatrix.x -= 2;
+			}
 		}
 	}
 	else if (direction == RIGHT)
 	{
 		if (playerPosition.x + JUMP >= 0 && playerPosition.x + JUMP <= 700)
 		{
-			player.setPosition(playerPosition.x + JUMP, playerPosition.y);
-			playerPosMatrix.x += 2;
+			nextPos.x += 2;
+			if (nextPos == player2pos && isAbleToMove(boardMatrix, nextPos, direction) && isAbleToMove(boardMatrix, playerPosMatrix, direction))
+			{
+				player.setPosition(playerPosition.x + (2*JUMP), playerPosition.y);
+				playerPosMatrix.x += 4;
+			}
+			else
+				if (isAbleToMove(boardMatrix, playerPosMatrix, direction) && nextPos != player2pos)
+			{
+				player.setPosition(playerPosition.x + JUMP, playerPosition.y);
+				playerPosMatrix.x += 2;
+			}
 		}
 	}
 	else if (direction == UP)
 	{
 		if (playerPosition.y - JUMP >= 0 && playerPosition.y - JUMP <= 700)
 		{
-			player.setPosition(playerPosition.x, playerPosition.y - JUMP);
-			playerPosMatrix.y -= 2;
+			nextPos.y -= 2;
+			if (nextPos == player2pos && isAbleToMove(boardMatrix, nextPos, direction) && isAbleToMove(boardMatrix, playerPosMatrix, direction))
+			{
+				player.setPosition(playerPosition.x, playerPosition.y - (2*JUMP));
+				playerPosMatrix.y -= 4;
+			}
+			else
+				if (isAbleToMove(boardMatrix, playerPosMatrix, direction) && nextPos != player2pos)
+			{
+				player.setPosition(playerPosition.x, playerPosition.y - JUMP);
+				playerPosMatrix.y -= 2;
+			}
 		}
 	}
 	else if (direction == DOWN)
 	{
 		if (playerPosition.y + JUMP >= 0 && playerPosition.y + JUMP <= 700)
 		{
-			player.setPosition(playerPosition.x, playerPosition.y + JUMP);
-			playerPosMatrix.y += 2;
+			nextPos.y += 2;
+			if (nextPos == player2pos && isAbleToMove(boardMatrix, nextPos, direction) && isAbleToMove(boardMatrix, playerPosMatrix, direction))
+			{
+				player.setPosition(playerPosition.x, playerPosition.y + (2*JUMP));
+				playerPosMatrix.y += 4;
+			}
+			else
+				if (isAbleToMove(boardMatrix, playerPosMatrix, direction) && nextPos!=player2pos)
+			{
+				player.setPosition(playerPosition.x, playerPosition.y + JUMP);
+				playerPosMatrix.y += 2;
+			}
 		}
 	}
 }

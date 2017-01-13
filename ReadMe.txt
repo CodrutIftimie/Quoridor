@@ -2,7 +2,9 @@
 
 Fisierul executabil se gaseste in folderul Release
 Pentru o functionare corecta a programului, folderul Resources (din folderul Release) trebuie sa se afle in acelasi folder cu fisierul executabil (Quoridor.exe)
-
+Controale: 2 Jucatori: Jucatorul Albastru :W,A,S,D
+		       Jucatorul Portocaliu : Sageti
+	   4 Jucatori: Sageti
 
 
 

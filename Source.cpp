@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string>
 #include <iostream>
-#include <time.h>
+#include <windows.h>
 using namespace sf;
 #define JUMP 77
 #define LEFT 0
@@ -14,34 +14,36 @@ using namespace sf;
 
 void changeGraphicalPos(Sprite& player, Vector2i playerPosMatrix);
 bool changeMatrixPos(Vector2i &playerPosMatrix, Vector2i player2PosMatrix, bool boardMatrix[17][17], int direction);
-int changeMatrixPos4Players(Vector2i playerPosMatrix[4], int playerTurn, bool boardMatrix[17][17], int direction);
+int changeMatrixPos4Players(Vector2i playerPosMatrix[4], short playerTurn, bool boardMatrix[17][17], int direction);
 void wallPlacementPrediction(Vector2i mousePos, Vector2i &prediction);
 bool isSpriteClicked(Sprite Wall, RenderWindow &Window);
 bool isBoardClicked(RenderWindow &Window, Event event);
 bool isInsideWall(Sprite Wall, RenderWindow &Window);
 bool isAbleToMove(bool boardMatrix[17][17], Vector2i playerPos, int direction);
 bool isAllowedToPlaceWall(bool boardMatrix[17][17], Vector2i prediction, bool wallFacing);
-bool pressedToMove(int direction, int playerTurn, bool gameMode, Event event);
-void searchRoute(bool boardMatrix[17][17], int playerY, int playerX, int playerTurn, int &result, int visited[17][17]);
+bool pressedToMove(int direction, short playerTurn, bool gameMode, Event event);
+void searchRoute(bool boardMatrix[17][17], int playerY, int playerX, short playerTurn, int &result, int visited[17][17]);
 void createTemporaryWall(bool boardMatrix[17][17], Vector2i WallPrediction, bool wallFacing);
 bool isInBorders(int playerY, int playerX);
-void changePlayerTurn(short &playerTurn, bool gameMode);
+void changePlayerTurn(short &playerTurn, bool gameMode, Sprite &Player, Texture PlayerTexture[4], RenderWindow & window);
 void emptyMatrix(int matrix[17][17]);
-int oppositePlayer(int playerTurn, bool gameMode);
-bool modifyWaitForInput(bool gameMode, int playerTurn, Vector2i playerPosMatrix[4], bool boardMatrix[17][17], int direction);
+int oppositePlayer(short playerTurn, bool gameMode);
+bool modifyWaitForInput(bool gameMode, short playerTurn, Vector2i playerPosMatrix[4], bool boardMatrix[17][17], int direction);
 bool freeSpace(Vector2i playerPosMatrix[4], Vector2i nextPos, int direction, bool gameMode);
-void updateWallsLeft(String amount);
 
 int main()
 {
 	bool gameMode;
 	bool gameStarted = false;
 	bool firstTime = true;
+	bool gameOver = false;
+	bool gameOverFirstTime = false;
 	RenderWindow gameWindow(VideoMode(950, 730), "Quoridor Game", Style::Close | Style::Titlebar);
 	gameWindow.setFramerateLimit(45);
-
+	ShowWindow(GetConsoleWindow(), SW_HIDE);
 	bool boardMatrix[17][17] = { false };
 	short playerTurn;
+	short winner;
 	bool wallBeingPlaced = false;
 	bool WallFacing = true;
 	bool change = false;
@@ -72,7 +74,7 @@ int main()
 		wallsLeft[i].setPosition(925, 0);
 	}
 
-	MainBoard.loadFromFile("Resources/MainMenu2.png");
+	MainBoard.loadFromFile("Resources/MainMenu.png");
 
 	unsigned int index;
 
@@ -82,7 +84,7 @@ int main()
 	Vector2i playerPosMatrix[4];
 
 	Sprite Board(MainBoard);
-	Sprite Player[4];
+	Sprite Player[5];
 	Sprite Wall[4][10];
 	Sprite WallPlacement;
 	Vector2i playerNewPosition;
@@ -103,7 +105,6 @@ int main()
 						++playerTurn;
 				}
 				else playerTurn = rand() % 4;
-				printf("%d", playerTurn);
 				playerPosMatrix[0].x = 8;
 				playerPosMatrix[0].y = 16;
 				playerPosMatrix[2].x = 8;
@@ -138,6 +139,8 @@ int main()
 
 				Player[0].setTexture(PlayerTexture[0]);
 				Player[2].setTexture(PlayerTexture[2]);
+				Player[4].setTexture(PlayerTexture[playerTurn]);
+				Player[4].setPosition(779, 9);
 				if (gameMode == FOURPLAYERS)
 				{
 					Player[1].setTexture(PlayerTexture[1]);
@@ -146,7 +149,7 @@ int main()
 				if (gameMode == TWOPLAYERS)
 					index = 10;
 				else index = 5;
-				for (int i = 0; i<index; i++)
+				for (int i = 0; i < index; i++)
 				{
 					Wall[0][i].setTexture(WallOrangeTextureH);
 					Wall[1][i].setTexture(WallGreenTextureH);
@@ -197,456 +200,496 @@ int main()
 					}
 				firstTime = false;
 			}
-			switch (event.type)
+			else if (gameOver == true)
 			{
-			case Event::Closed:
-			{
-				gameWindow.close();
-				break;
-			}
-			case Event::KeyPressed:
-			{
-				if (gameStarted == true)
+				if (gameOverFirstTime == true)
 				{
-					if (waitForInput == true)
+					MainBoard.loadFromFile("Resources/GameOver.png");
+					for (index = 0; index < 4; index++)
 					{
-						bool unmovable = false;
-						if (gameMode == TWOPLAYERS)
-						{
-							if (pressedToMove(UP, playerTurn, gameMode, event) && isAbleToMove(boardMatrix, playerPosMatrix[oppositePlayer(playerTurn, gameMode)], UP))
-							{
-								if (direction == LEFT)
-								{
-									playerPosMatrix[playerTurn].x -= 2;
-									playerPosMatrix[playerTurn].y -= 2;
-									waitForInput = false;
-								}
-								else if (direction == RIGHT)
-								{
-									playerPosMatrix[playerTurn].x += 2;
-									playerPosMatrix[playerTurn].y -= 2;
-									waitForInput = false;
-								}
-							}
-							else if (pressedToMove(DOWN, playerTurn, gameMode, event) && isAbleToMove(boardMatrix, playerPosMatrix[oppositePlayer(playerTurn, gameMode)], DOWN))
-							{
-								if (direction == LEFT)
-								{
-									playerPosMatrix[playerTurn].x -= 2;
-									playerPosMatrix[playerTurn].y += 2;
-									waitForInput = false;
-								}
-								else if (direction == RIGHT)
-								{
-									playerPosMatrix[playerTurn].x += 2;
-									playerPosMatrix[playerTurn].y += 2;
-									waitForInput = false;
-								}
-							}
-							else if (pressedToMove(LEFT, playerTurn, gameMode, event) && isAbleToMove(boardMatrix, playerPosMatrix[oppositePlayer(playerTurn, gameMode)], LEFT))
-							{
-								if (direction == UP)
-								{
-									playerPosMatrix[playerTurn].x -= 2;
-									playerPosMatrix[playerTurn].y -= 2;
-									waitForInput = false;
-								}
-								else if (direction == DOWN)
-								{
-									playerPosMatrix[playerTurn].x -= 2;
-									playerPosMatrix[playerTurn].y += 2;
-									waitForInput = false;
-								}
-							}
-							else if (pressedToMove(RIGHT, playerTurn, gameMode, event) && isAbleToMove(boardMatrix, playerPosMatrix[oppositePlayer(playerTurn, gameMode)], RIGHT))
-							{
-								if (direction == UP)
-								{
-									playerPosMatrix[playerTurn].x += 2;
-									playerPosMatrix[playerTurn].y -= 2;
-									waitForInput = false;
-								}
-								else if (direction == DOWN)
-								{
-									playerPosMatrix[playerTurn].x += 2;
-									playerPosMatrix[playerTurn].y += 2;
-									waitForInput = false;
-								}
-							}
-							else unmovable = true;
-						}
-						else
-						{
-							Vector2i newPos = playerPosMatrix[playerTurn];
-							switch (direction)
-							{
-							case LEFT:
-							{
-								newPos.x -= 2;
-								if (pressedToMove(UP,playerTurn,gameMode,event) && isAbleToMove(boardMatrix, newPos, UP))
-								{
-									newPos.y -= 2;
-									if (freeSpace(playerPosMatrix, newPos, UP, FOURPLAYERS))
-									{
-										playerPosMatrix[playerTurn] = newPos;
-										waitForInput = false;
-										break;
-									}
-									newPos.y += 2;
-								}
-								else if (pressedToMove(DOWN, playerTurn, gameMode, event) && isAbleToMove(boardMatrix, newPos, DOWN))
-								{
-									newPos.y += 2;
-									if (freeSpace(playerPosMatrix, newPos, DOWN, FOURPLAYERS))
-									{
-										playerPosMatrix[playerTurn] = newPos;
-										waitForInput = false;
-										break;
-									}
-								}
-								else unmovable = true;
-								break;
-							}
-							case RIGHT:
-							{
-								newPos.x += 2;
-								if (pressedToMove(UP, playerTurn, gameMode, event) && (isAbleToMove(boardMatrix, newPos, UP)))
-								{
-									newPos.y -= 2;
-									if (freeSpace(playerPosMatrix, newPos, UP, FOURPLAYERS))
-									{
-										playerPosMatrix[playerTurn] = newPos;
-										waitForInput = false;
-										break;
-									}
-									newPos.x -= 2;
-								}
-								else if (pressedToMove(DOWN, playerTurn, gameMode, event) && isAbleToMove(boardMatrix, newPos, DOWN))
-								{
-									newPos.y += 2;
-									if (freeSpace(playerPosMatrix, newPos, DOWN, FOURPLAYERS))
-									{
-										playerPosMatrix[playerTurn] = newPos;
-										waitForInput = false;
-										break;
-									}
-								}
-								else unmovable = true;
-								break;
-							}
-							case UP:
-							{
-								newPos.y -= 2;
-								if (pressedToMove(LEFT, playerTurn, gameMode, event) && isAbleToMove(boardMatrix, newPos, LEFT))
-								{
-									newPos.x -= 2;
-									if (freeSpace(playerPosMatrix, newPos, LEFT, FOURPLAYERS))
-									{
-										playerPosMatrix[playerTurn] = newPos;
-										waitForInput = false;
-										break;
-									}
-									newPos.x += 2;
-								}
-								else if (pressedToMove(RIGHT, playerTurn, gameMode, event) && isAbleToMove(boardMatrix, newPos, RIGHT))
-								{
-									newPos.x += 2;
-									if (freeSpace(playerPosMatrix, newPos, RIGHT, FOURPLAYERS))
-									{
-										playerPosMatrix[playerTurn] = newPos;
-										waitForInput = false;
-										break;
-									}
-								}
-								else unmovable = true;
-								break;
-							}
-							case DOWN:
-							{
-								newPos.y += 2;
-								if (pressedToMove(LEFT, playerTurn, gameMode, event) && isAbleToMove(boardMatrix, newPos, LEFT))
-								{
-									newPos.x -= 2;
-									if (freeSpace(playerPosMatrix, newPos, LEFT, FOURPLAYERS))
-									{
-										playerPosMatrix[playerTurn] = newPos;
-										waitForInput = false;
-										break;
-									}
-									newPos.x += 2;
-								}
-								else if (pressedToMove(RIGHT, playerTurn, gameMode, event) && isAbleToMove(boardMatrix, newPos, RIGHT))
-								{
-									newPos.x += 2;
-									if (freeSpace(playerPosMatrix, newPos, RIGHT, FOURPLAYERS))
-									{
-										playerPosMatrix[playerTurn] = newPos;
-										waitForInput = false;
-										break;
-									}
-								}
-								else unmovable = true;
-								break;
-							}
-							}
-						}
-						if (waitForInput == false && unmovable == false)
-						{
-							changeGraphicalPos(Player[playerTurn], playerPosMatrix[playerTurn]);
-							changePlayerTurn(playerTurn, gameMode);
-						}
-						else if (unmovable == true) waitForInput = false;
+						Player[index].setPosition(1000, 1000);
+						wallsLeft[index].setPosition(1000, 1000);
+						for (int index2 = 0; index2 < 10; index2++)
+							Wall[index][index2].setPosition(1000, 1000);
 					}
-					else
+					Player[4].setPosition(1000, 1000);
+					Player[winner].setPosition(335, 350);
+					gameOverFirstTime = false;
+				}
+				Vector2i mousePos = Mouse::getPosition(gameWindow);
+				if (mousePos.x >= 325 && mousePos.y >= 520 && mousePos.x <= 624 && mousePos.y <= 579)
+				{
+					if (event.mouseButton.button == Mouse::Left)
 					{
-						Vector2i playerPosMatrixOld = playerPosMatrix[playerTurn];
-						if (wallBeingPlaced == false)
-						{
-							if (pressedToMove(LEFT, playerTurn, gameMode, event))       { direction = LEFT;  change = true; }
-							else if (pressedToMove(RIGHT, playerTurn, gameMode, event)) { direction = RIGHT; change = true; }
-							else if (pressedToMove(UP, playerTurn, gameMode, event))    { direction = UP;    change = true; }
-							else if (pressedToMove(DOWN, playerTurn, gameMode, event))  { direction = DOWN;  change = true; }
-							
-							if (change == true)
-							{
-								if (gameMode == FOURPLAYERS && changeMatrixPos4Players(playerPosMatrix, playerTurn, boardMatrix, direction) == -1)
-								{
-									waitForInput = true;
-								}
-								else if(gameMode == TWOPLAYERS) 
-									waitForInput = modifyWaitForInput(gameMode, playerTurn, playerPosMatrix, boardMatrix, direction);
-								if(waitForInput == false)
-								{
-									changeGraphicalPos(Player[playerTurn], playerPosMatrix[playerTurn]);
-									if (playerPosMatrix[0].y == 0)
-										printf("Player 1 wins !");
-									else if (playerPosMatrix[2].y == 16)
-										printf("Player 2 wins !");
-									else if (gameMode == FOURPLAYERS)
-									{
-										if (playerPosMatrix[1].x == 16)
-											printf("Player 3 wins !");
-										else if (playerPosMatrix[3].x == 0)
-											printf("Player 4 wins !");
-									}
-									if (playerPosMatrixOld.x != playerPosMatrix[playerTurn].x || playerPosMatrixOld.y != playerPosMatrix[playerTurn].y)
-										changePlayerTurn(playerTurn, gameMode);
-								}
-								change = false;
-							}
-						}
+						MainBoard.loadFromFile("Resources/MainMenu.png");
+						Player[winner].setPosition(1000, 1000);
+						gameStarted = false;
+						firstTime = true;
+						gameOver = false;
 					}
 				}
-				break;
+				else if (event.type == Event::Closed)
+					gameWindow.close();
 			}
-			case Event::MouseButtonReleased:
+			else
 			{
-				if (gameStarted == true)
+				switch (event.type)
 				{
-					Vector2i mousePos = Mouse::getPosition(gameWindow);
-					if (wallBeingPlaced == true && mousePos.x >= 779 && mousePos.y >= 674 && mousePos.x <= 891 && mousePos.y <= 708)
+				case Event::Closed:
+				{
+					gameWindow.close();
+					break;
+				}
+				case Event::KeyPressed:
+				{
+					if (gameStarted == true)
 					{
-						if (event.mouseButton.button == Mouse::Left)
+						if (waitForInput == true)
 						{
-							switch (playerTurn)
-							{
-								case 0: 
-								{ 
-									Wall[playerTurn][wallIndex[playerTurn]].setPosition(762, 591);
-									Wall[playerTurn][wallIndex[playerTurn]].setTexture(WallOrangeTextureH,1);
-									break; 
-								}
-								case 2: 
-								{ 
-									Wall[playerTurn][wallIndex[playerTurn]].setPosition(762, 283);
-									Wall[playerTurn][wallIndex[playerTurn]].setTexture(WallBlueTextureH,1);
-									break; 
-								}
-								case 1: 
-								{ 
-									Wall[playerTurn][wallIndex[playerTurn]].setPosition(762, 437);
-									Wall[playerTurn][wallIndex[playerTurn]].setTexture(WallGreenTextureH,1);
-									break;
-								}
-								case 3: 
-								{ 
-									Wall[playerTurn][wallIndex[playerTurn]].setPosition(762, 129);
-									Wall[playerTurn][wallIndex[playerTurn]].setTexture(WallRedTextureH,1);
-									break;
-								}
-							}
-							wallBeingPlaced = false;
-							WallPlacement.setPosition(1000, 1000);
-							WallPlacement.setTexture(WallPlacementTextureH);
-						}
-					}
-					if (wallBeingPlaced == true && isBoardClicked(gameWindow, event))
-					{
-						if (event.mouseButton.button == Mouse::Left && isAllowedToPlaceWall(boardMatrix, WallPrediction, WallFacing))
-						{
-							int WallWidth = Wall[playerTurn][wallIndex[playerTurn]].getGlobalBounds().width;
-							int WallHeight = Wall[playerTurn][wallIndex[playerTurn]].getGlobalBounds().height;
-							int result = 0;
-							int visited[17][17] = { 0 };
-							bool copyBoardMatrix[17][17];
-							for (int i = 0; i < 17; i++)
-								for (int j = 0; j < 17; j++)
-									copyBoardMatrix[i][j] = boardMatrix[i][j];
-							createTemporaryWall(copyBoardMatrix, WallPrediction, WallFacing);
+							bool unmovable = false;
 							if (gameMode == TWOPLAYERS)
 							{
-								searchRoute(copyBoardMatrix, playerPosMatrix[0].y, playerPosMatrix[0].x, 0, result, visited);
-								if (result == 1)
+								if (pressedToMove(UP, playerTurn, gameMode, event) && isAbleToMove(boardMatrix, playerPosMatrix[oppositePlayer(playerTurn, gameMode)], UP))
 								{
-									emptyMatrix(visited);
-									result = 0;
-									searchRoute(copyBoardMatrix, playerPosMatrix[2].y, playerPosMatrix[2].x, 2, result, visited);
+									if (direction == LEFT)
+									{
+										playerPosMatrix[playerTurn].x -= 2;
+										playerPosMatrix[playerTurn].y -= 2;
+										waitForInput = false;
+									}
+									else if (direction == RIGHT)
+									{
+										playerPosMatrix[playerTurn].x += 2;
+										playerPosMatrix[playerTurn].y -= 2;
+										waitForInput = false;
+									}
 								}
+								else if (pressedToMove(DOWN, playerTurn, gameMode, event) && isAbleToMove(boardMatrix, playerPosMatrix[oppositePlayer(playerTurn, gameMode)], DOWN))
+								{
+									if (direction == LEFT)
+									{
+										playerPosMatrix[playerTurn].x -= 2;
+										playerPosMatrix[playerTurn].y += 2;
+										waitForInput = false;
+									}
+									else if (direction == RIGHT)
+									{
+										playerPosMatrix[playerTurn].x += 2;
+										playerPosMatrix[playerTurn].y += 2;
+										waitForInput = false;
+									}
+								}
+								else if (pressedToMove(LEFT, playerTurn, gameMode, event) && isAbleToMove(boardMatrix, playerPosMatrix[oppositePlayer(playerTurn, gameMode)], LEFT))
+								{
+									if (direction == UP)
+									{
+										playerPosMatrix[playerTurn].x -= 2;
+										playerPosMatrix[playerTurn].y -= 2;
+										waitForInput = false;
+									}
+									else if (direction == DOWN)
+									{
+										playerPosMatrix[playerTurn].x -= 2;
+										playerPosMatrix[playerTurn].y += 2;
+										waitForInput = false;
+									}
+								}
+								else if (pressedToMove(RIGHT, playerTurn, gameMode, event) && isAbleToMove(boardMatrix, playerPosMatrix[oppositePlayer(playerTurn, gameMode)], RIGHT))
+								{
+									if (direction == UP)
+									{
+										playerPosMatrix[playerTurn].x += 2;
+										playerPosMatrix[playerTurn].y -= 2;
+										waitForInput = false;
+									}
+									else if (direction == DOWN)
+									{
+										playerPosMatrix[playerTurn].x += 2;
+										playerPosMatrix[playerTurn].y += 2;
+										waitForInput = false;
+									}
+								}
+								else unmovable = true;
 							}
 							else
 							{
-								searchRoute(copyBoardMatrix, playerPosMatrix[0].y, playerPosMatrix[0].x, 0, result, visited);
-								if (result == 1)
+								Vector2i newPos = playerPosMatrix[playerTurn];
+								switch (direction)
 								{
-									emptyMatrix(visited);
-									result = 0;
-									searchRoute(copyBoardMatrix, playerPosMatrix[1].y, playerPosMatrix[1].x, 1, result, visited);
+								case LEFT:
+								{
+									newPos.x -= 2;
+									if (pressedToMove(UP, playerTurn, gameMode, event) && isAbleToMove(boardMatrix, newPos, UP))
+									{
+										newPos.y -= 2;
+										if (freeSpace(playerPosMatrix, newPos, UP, FOURPLAYERS))
+										{
+											playerPosMatrix[playerTurn] = newPos;
+											waitForInput = false;
+											break;
+										}
+										newPos.y += 2;
+									}
+									else if (pressedToMove(DOWN, playerTurn, gameMode, event) && isAbleToMove(boardMatrix, newPos, DOWN))
+									{
+										newPos.y += 2;
+										if (freeSpace(playerPosMatrix, newPos, DOWN, FOURPLAYERS))
+										{
+											playerPosMatrix[playerTurn] = newPos;
+											waitForInput = false;
+											break;
+										}
+									}
+									else unmovable = true;
+									break;
+								}
+								case RIGHT:
+								{
+									newPos.x += 2;
+									if (pressedToMove(UP, playerTurn, gameMode, event) && (isAbleToMove(boardMatrix, newPos, UP)))
+									{
+										newPos.y -= 2;
+										if (freeSpace(playerPosMatrix, newPos, UP, FOURPLAYERS))
+										{
+											playerPosMatrix[playerTurn] = newPos;
+											waitForInput = false;
+											break;
+										}
+										newPos.x -= 2;
+									}
+									else if (pressedToMove(DOWN, playerTurn, gameMode, event) && isAbleToMove(boardMatrix, newPos, DOWN))
+									{
+										newPos.y += 2;
+										if (freeSpace(playerPosMatrix, newPos, DOWN, FOURPLAYERS))
+										{
+											playerPosMatrix[playerTurn] = newPos;
+											waitForInput = false;
+											break;
+										}
+									}
+									else unmovable = true;
+									break;
+								}
+								case UP:
+								{
+									newPos.y -= 2;
+									if (pressedToMove(LEFT, playerTurn, gameMode, event) && isAbleToMove(boardMatrix, newPos, LEFT))
+									{
+										newPos.x -= 2;
+										if (freeSpace(playerPosMatrix, newPos, LEFT, FOURPLAYERS))
+										{
+											playerPosMatrix[playerTurn] = newPos;
+											waitForInput = false;
+											break;
+										}
+										newPos.x += 2;
+									}
+									else if (pressedToMove(RIGHT, playerTurn, gameMode, event) && isAbleToMove(boardMatrix, newPos, RIGHT))
+									{
+										newPos.x += 2;
+										if (freeSpace(playerPosMatrix, newPos, RIGHT, FOURPLAYERS))
+										{
+											playerPosMatrix[playerTurn] = newPos;
+											waitForInput = false;
+											break;
+										}
+									}
+									else unmovable = true;
+									break;
+								}
+								case DOWN:
+								{
+									newPos.y += 2;
+									if (pressedToMove(LEFT, playerTurn, gameMode, event) && isAbleToMove(boardMatrix, newPos, LEFT))
+									{
+										newPos.x -= 2;
+										if (freeSpace(playerPosMatrix, newPos, LEFT, FOURPLAYERS))
+										{
+											playerPosMatrix[playerTurn] = newPos;
+											waitForInput = false;
+											break;
+										}
+										newPos.x += 2;
+									}
+									else if (pressedToMove(RIGHT, playerTurn, gameMode, event) && isAbleToMove(boardMatrix, newPos, RIGHT))
+									{
+										newPos.x += 2;
+										if (freeSpace(playerPosMatrix, newPos, RIGHT, FOURPLAYERS))
+										{
+											playerPosMatrix[playerTurn] = newPos;
+											waitForInput = false;
+											break;
+										}
+									}
+									else unmovable = true;
+									break;
+								}
+								}
+							}
+							if (waitForInput == false && unmovable == false)
+							{
+								changeGraphicalPos(Player[playerTurn], playerPosMatrix[playerTurn]);
+								changePlayerTurn(playerTurn, gameMode, Player[4], PlayerTexture,gameWindow);
+							}
+							else if (unmovable == true) waitForInput = false;
+						}
+						else
+						{
+							Vector2i playerPosMatrixOld = playerPosMatrix[playerTurn];
+							if (wallBeingPlaced == false)
+							{
+								if (pressedToMove(LEFT, playerTurn, gameMode, event)) { direction = LEFT;  change = true; }
+								else if (pressedToMove(RIGHT, playerTurn, gameMode, event)) { direction = RIGHT; change = true; }
+								else if (pressedToMove(UP, playerTurn, gameMode, event)) { direction = UP;    change = true; }
+								else if (pressedToMove(DOWN, playerTurn, gameMode, event)) { direction = DOWN;  change = true; }
+
+								if (change == true)
+								{
+									if (gameMode == FOURPLAYERS && changeMatrixPos4Players(playerPosMatrix, playerTurn, boardMatrix, direction) == -1)
+										waitForInput = true;
+									else if (gameMode == TWOPLAYERS)
+										waitForInput = modifyWaitForInput(gameMode, playerTurn, playerPosMatrix, boardMatrix, direction);
+									if (waitForInput == false)
+									{
+										changeGraphicalPos(Player[playerTurn], playerPosMatrix[playerTurn]);
+										if (playerPosMatrix[0].y == 0)
+										{
+											gameOver = true;
+											gameOverFirstTime = true;
+											winner = 0;
+										}
+										else if (playerPosMatrix[2].y == 16)
+										{
+											gameOver = true;
+											gameOverFirstTime = true;
+											winner = 2;
+										}
+										else if (gameMode == FOURPLAYERS)
+										{
+											if (playerPosMatrix[1].x == 16)
+											{
+												gameOver = true;
+												gameOverFirstTime = true;
+												winner = 1;
+											}
+											else if (playerPosMatrix[3].x == 0)
+											{
+												gameOver = true;
+												gameOverFirstTime = true;
+												winner = 3;
+											}
+										}
+										if (playerPosMatrixOld.x != playerPosMatrix[playerTurn].x || playerPosMatrixOld.y != playerPosMatrix[playerTurn].y)
+											changePlayerTurn(playerTurn, gameMode, Player[4], PlayerTexture,gameWindow);
+									}
+									change = false;
+								}
+							}
+						}
+					}
+					break;
+				}
+				case Event::MouseButtonReleased:
+				{
+					if (gameStarted == true)
+					{
+						Vector2i mousePos = Mouse::getPosition(gameWindow);
+						if (wallBeingPlaced == true && mousePos.x >= 779 && mousePos.y >= 674 && mousePos.x <= 891 && mousePos.y <= 708)
+						{
+							if (event.mouseButton.button == Mouse::Left)
+							{
+								switch (playerTurn)
+								{
+								case 0:
+								{
+									Wall[playerTurn][wallIndex[playerTurn]].setPosition(762, 591);
+									Wall[playerTurn][wallIndex[playerTurn]].setTexture(WallOrangeTextureH, 1);
+									break;
+								}
+								case 2:
+								{
+									Wall[playerTurn][wallIndex[playerTurn]].setPosition(762, 283);
+									Wall[playerTurn][wallIndex[playerTurn]].setTexture(WallBlueTextureH, 1);
+									break;
+								}
+								case 1:
+								{
+									Wall[playerTurn][wallIndex[playerTurn]].setPosition(762, 437);
+									Wall[playerTurn][wallIndex[playerTurn]].setTexture(WallGreenTextureH, 1);
+									break;
+								}
+								case 3:
+								{
+									Wall[playerTurn][wallIndex[playerTurn]].setPosition(762, 129);
+									Wall[playerTurn][wallIndex[playerTurn]].setTexture(WallRedTextureH, 1);
+									break;
+								}
+								}
+								wallBeingPlaced = false;
+								WallPlacement.setPosition(1000, 1000);
+								WallPlacement.setTexture(WallPlacementTextureH);
+							}
+						}
+						if (wallBeingPlaced == true && isBoardClicked(gameWindow, event))
+						{
+							if (event.mouseButton.button == Mouse::Left && isAllowedToPlaceWall(boardMatrix, WallPrediction, WallFacing))
+							{
+								int WallWidth = Wall[playerTurn][wallIndex[playerTurn]].getGlobalBounds().width;
+								int WallHeight = Wall[playerTurn][wallIndex[playerTurn]].getGlobalBounds().height;
+								int result = 0;
+								int visited[17][17] = { 0 };
+								bool copyBoardMatrix[17][17];
+								for (int i = 0; i < 17; i++)
+									for (int j = 0; j < 17; j++)
+										copyBoardMatrix[i][j] = boardMatrix[i][j];
+								createTemporaryWall(copyBoardMatrix, WallPrediction, WallFacing);
+								if (gameMode == TWOPLAYERS)
+								{
+									searchRoute(copyBoardMatrix, playerPosMatrix[0].y, playerPosMatrix[0].x, 0, result, visited);
 									if (result == 1)
 									{
 										emptyMatrix(visited);
 										result = 0;
 										searchRoute(copyBoardMatrix, playerPosMatrix[2].y, playerPosMatrix[2].x, 2, result, visited);
+									}
+								}
+								else
+								{
+									searchRoute(copyBoardMatrix, playerPosMatrix[0].y, playerPosMatrix[0].x, 0, result, visited);
+									if (result == 1)
+									{
+										emptyMatrix(visited);
+										result = 0;
+										searchRoute(copyBoardMatrix, playerPosMatrix[1].y, playerPosMatrix[1].x, 1, result, visited);
 										if (result == 1)
 										{
 											emptyMatrix(visited);
 											result = 0;
-											searchRoute(copyBoardMatrix, playerPosMatrix[3].y, playerPosMatrix[3].x, 3, result, visited);
+											searchRoute(copyBoardMatrix, playerPosMatrix[2].y, playerPosMatrix[2].x, 2, result, visited);
+											if (result == 1)
+											{
+												emptyMatrix(visited);
+												result = 0;
+												searchRoute(copyBoardMatrix, playerPosMatrix[3].y, playerPosMatrix[3].x, 3, result, visited);
+											}
 										}
 									}
 								}
+								if (result == 1)
+								{
+									Wall[playerTurn][wallIndex[playerTurn]].setPosition(WallPrediction.x * 77 + 19 - WallWidth / 2, WallPrediction.y * 77 + 19 - WallHeight / 2);
+									wallIndex[playerTurn]++;
+									if (gameMode == TWOPLAYERS)
+										amount = std::to_string(10 - wallIndex[playerTurn]);
+									else amount = std::to_string(5 - wallIndex[playerTurn]);
+									wallsLeft[playerTurn].setString(amount);
+									changePlayerTurn(playerTurn, gameMode, Player[4], PlayerTexture,gameWindow);
+									wallBeingPlaced = false;
+									WallPlacement.setPosition(1000, 1000);
+									WallPlacement.setTexture(WallPlacementTextureH, 1);
+									if (WallFacing == true)
+									{
+										boardMatrix[WallPrediction.y * 2 - 1][WallPrediction.x * 2 - 2] = true;
+										boardMatrix[WallPrediction.y * 2 - 1][WallPrediction.x * 2 - 1] = true;
+										boardMatrix[WallPrediction.y * 2 - 1][WallPrediction.x * 2] = true;
+									}
+									else
+									{
+										boardMatrix[WallPrediction.y * 2 - 2][WallPrediction.x * 2 - 1] = true;
+										boardMatrix[WallPrediction.y * 2 - 1][WallPrediction.x * 2 - 1] = true;
+										boardMatrix[WallPrediction.y * 2][WallPrediction.x * 2 - 1] = true;
+									}
+								}
 							}
-							for (int i = 0; i < 17; i++)
+						}
+						else if (wallBeingPlaced == true && event.mouseButton.button == Mouse::Right)
+						{
+							if (WallFacing == true)
 							{
-								for (int j = 0; j < 17; j++)
-									printf("%d ", visited[i][j]);
-								printf("\n");
+								if (playerTurn == 0)
+									Wall[playerTurn][wallIndex[playerTurn]].setTexture(WallOrangeTextureV, 1);
+								else if (playerTurn == 1)
+									Wall[playerTurn][wallIndex[playerTurn]].setTexture(WallGreenTextureV, 1);
+								else if (playerTurn == 2)
+									Wall[playerTurn][wallIndex[playerTurn]].setTexture(WallBlueTextureV, 1);
+								else Wall[playerTurn][wallIndex[playerTurn]].setTexture(WallRedTextureV, 1);
+								WallFacing = false;
+								WallPlacement.setTexture(WallPlacementTextureV, 1);
 							}
-							printf("%d", result);
-							if (result == 1)
+							else
 							{
-								Wall[playerTurn][wallIndex[playerTurn]].setPosition(WallPrediction.x * 77 + 19 - WallWidth / 2, WallPrediction.y * 77 + 19 - WallHeight / 2);
-								wallIndex[playerTurn]++;
-								if (gameMode == TWOPLAYERS)
-									amount = std::to_string(10 - wallIndex[playerTurn]);
-								else amount = std::to_string(5 - wallIndex[playerTurn]);
-								wallsLeft[playerTurn].setString(amount);
-								changePlayerTurn(playerTurn, gameMode);
-								wallBeingPlaced = false;
-								WallPlacement.setPosition(1000, 1000);
+								if (playerTurn == 0)
+									Wall[playerTurn][wallIndex[playerTurn]].setTexture(WallOrangeTextureH, 1);
+								else if (playerTurn == 1)
+									Wall[playerTurn][wallIndex[playerTurn]].setTexture(WallGreenTextureH, 1);
+								else if (playerTurn == 2)
+									Wall[playerTurn][wallIndex[playerTurn]].setTexture(WallBlueTextureH, 1);
+								else Wall[playerTurn][wallIndex[playerTurn]].setTexture(WallRedTextureH, 1);
+								WallFacing = true;
 								WallPlacement.setTexture(WallPlacementTextureH, 1);
-								if (WallFacing == true)
-								{
-									boardMatrix[WallPrediction.y * 2 - 1][WallPrediction.x * 2 - 2] = true;
-									boardMatrix[WallPrediction.y * 2 - 1][WallPrediction.x * 2 - 1] = true;
-									boardMatrix[WallPrediction.y * 2 - 1][WallPrediction.x * 2] = true;
-								}
-								else
-								{
-									boardMatrix[WallPrediction.y * 2 - 2][WallPrediction.x * 2 - 1] = true;
-									boardMatrix[WallPrediction.y * 2 - 1][WallPrediction.x * 2 - 1] = true;
-									boardMatrix[WallPrediction.y * 2][WallPrediction.x * 2 - 1] = true;
-								}
 							}
+							int WallWidth = Wall[playerTurn][wallIndex[playerTurn]].getGlobalBounds().width;
+							int WallHeight = Wall[playerTurn][wallIndex[playerTurn]].getGlobalBounds().height;
+							Vector2i mousePos = Mouse::getPosition(gameWindow);
+							Wall[playerTurn][wallIndex[playerTurn]].setPosition(mousePos.x - WallWidth / 2, mousePos.y - WallHeight / 2);
 						}
 					}
-					else if (wallBeingPlaced == true && event.mouseButton.button == Mouse::Right)
+					else
 					{
-						if (WallFacing == true)
+						Vector2i mousePos = Mouse::getPosition(gameWindow);
+						if (event.mouseButton.button == Mouse::Left)
 						{
-							if (playerTurn == 0)
-								Wall[playerTurn][wallIndex[playerTurn]].setTexture(WallOrangeTextureV, 1);
-							else if (playerTurn == 1)
-								Wall[playerTurn][wallIndex[playerTurn]].setTexture(WallGreenTextureV, 1);
-							else if (playerTurn == 2)
-								Wall[playerTurn][wallIndex[playerTurn]].setTexture(WallBlueTextureV, 1);
-							else Wall[playerTurn][wallIndex[playerTurn]].setTexture(WallRedTextureV, 1);
-							WallFacing = false;
-							WallPlacement.setTexture(WallPlacementTextureV, 1);
+							if (mousePos.x >= 225 && mousePos.y >= 238 && mousePos.x <= 724 && mousePos.y <= 302)
+							{
+								gameMode = TWOPLAYERS;
+								gameStarted = true;
+							}
+							else if (mousePos.x >= 225 && mousePos.y >= 333 && mousePos.x <= 724 && mousePos.y <= 397)
+							{
+								gameMode = FOURPLAYERS;
+								gameStarted = true;
+							}
+							else if (mousePos.x >= 725 && mousePos.y >= 617 && mousePos.x <= 924 && mousePos.y <= 681)
+								gameWindow.close();
 						}
-						else
+					}
+					break;
+				}
+				default:
+				{
+					if (gameStarted == true)
+					{
+						if (wallBeingPlaced == true)
 						{
-							if (playerTurn == 0)
-								Wall[playerTurn][wallIndex[playerTurn]].setTexture(WallOrangeTextureH, 1);
-							else if (playerTurn == 1)
-								Wall[playerTurn][wallIndex[playerTurn]].setTexture(WallGreenTextureH, 1);
-							else if (playerTurn == 2)
-								Wall[playerTurn][wallIndex[playerTurn]].setTexture(WallBlueTextureH, 1);
-							else Wall[playerTurn][wallIndex[playerTurn]].setTexture(WallRedTextureH, 1);
+							int WallWidth = Wall[playerTurn][wallIndex[playerTurn]].getGlobalBounds().width;
+							int WallHeight = Wall[playerTurn][wallIndex[playerTurn]].getGlobalBounds().height;
+							Vector2i mousePos = Mouse::getPosition(gameWindow);
+							Wall[playerTurn][wallIndex[playerTurn]].setPosition(mousePos.x - WallWidth / 2, mousePos.y - WallHeight / 2);
+							wallPlacementPrediction(mousePos, WallPrediction);
+							WallPlacement.setPosition(WallPrediction.x * 77 + 19 - WallWidth / 2, WallPrediction.y * 77 + 19 - WallHeight / 2);
+						}
+						else if (wallBeingPlaced == false && isSpriteClicked(Wall[playerTurn][wallIndex[playerTurn]], gameWindow))
+						{
+							wallBeingPlaced = true;
 							WallFacing = true;
-							WallPlacement.setTexture(WallPlacementTextureH, 1);
+							if (gameMode == TWOPLAYERS)
+								index = 10;
+							else index = 5;
+							if (playerTurn == 0 && wallIndex[0] + 1 < index)
+								Wall[0][wallIndex[0] + 1].setPosition(762, 591);
+							else if (playerTurn == 1 && wallIndex[1] + 1 < index)
+								Wall[1][wallIndex[1] + 1].setPosition(762, 437);
+							else if (playerTurn == 2 && wallIndex[2] + 1 < index)
+								Wall[2][wallIndex[2] + 1].setPosition(762, 283);
+							else if (playerTurn == 3 && wallIndex[3] + 1 < index)
+								Wall[3][wallIndex[3] + 1].setPosition(762, 129);
 						}
-						int WallWidth = Wall[playerTurn][wallIndex[playerTurn]].getGlobalBounds().width;
-						int WallHeight = Wall[playerTurn][wallIndex[playerTurn]].getGlobalBounds().height;
-						Vector2i mousePos = Mouse::getPosition(gameWindow);
-						Wall[playerTurn][wallIndex[playerTurn]].setPosition(mousePos.x - WallWidth / 2, mousePos.y - WallHeight / 2);
 					}
+					break;
 				}
-				else
-				{
-					Vector2i mousePos = Mouse::getPosition(gameWindow);
-					if (event.mouseButton.button == Mouse::Left)
-					{
-						if (mousePos.x >= 225 && mousePos.y >= 238 && mousePos.x <= 724 && mousePos.y <= 302)
-						{
-							gameMode = TWOPLAYERS;
-							gameStarted = true;
-						}
-						else if (mousePos.x >= 225 && mousePos.y >= 333 && mousePos.x <= 724 && mousePos.y <= 397)
-						{
-							gameMode = FOURPLAYERS;
-							gameStarted = true;
-						}
-						else if (mousePos.x >= 725 && mousePos.y >= 617 && mousePos.x <= 924 && mousePos.y <= 681)
-							gameWindow.close();
-					}
 				}
-				break;
-			}
-			default:
-			{
-				if (gameStarted == true)
-				{
-					if (wallBeingPlaced == true)
-					{
-						int WallWidth = Wall[playerTurn][wallIndex[playerTurn]].getGlobalBounds().width;
-						int WallHeight = Wall[playerTurn][wallIndex[playerTurn]].getGlobalBounds().height;
-						Vector2i mousePos = Mouse::getPosition(gameWindow);
-						Wall[playerTurn][wallIndex[playerTurn]].setPosition(mousePos.x - WallWidth / 2, mousePos.y - WallHeight / 2);
-						wallPlacementPrediction(mousePos, WallPrediction);
-						WallPlacement.setPosition(WallPrediction.x * 77 + 19 - WallWidth / 2, WallPrediction.y * 77 + 19 - WallHeight / 2);
-					}
-					else if (wallBeingPlaced == false && isSpriteClicked(Wall[playerTurn][wallIndex[playerTurn]], gameWindow))
-					{
-						wallBeingPlaced = true;
-						WallFacing = true;
-						if (gameMode == TWOPLAYERS)
-							index = 10;
-						else index = 5;
-						if (playerTurn == 0 && wallIndex[0] + 1 < index)
-							Wall[0][wallIndex[0] + 1].setPosition(762, 591);
-						else if (playerTurn == 1 && wallIndex[1] + 1 < index)
-							Wall[1][wallIndex[1] + 1].setPosition(762, 437);
-						else if (playerTurn == 2 && wallIndex[2] + 1 < index)
-							Wall[2][wallIndex[2] + 1].setPosition(762, 283);
-						else if (playerTurn == 3 && wallIndex[3] + 1 < index)
-							Wall[3][wallIndex[3] + 1].setPosition(762, 129);
-					}
-				}
-				break;
-			}
 			}
 		}
-
 		gameWindow.clear();
 		gameWindow.draw(Board);
 		gameWindow.draw(WallPlacement);
@@ -677,6 +720,7 @@ int main()
 		}
 		gameWindow.draw(Player[0]);
 		gameWindow.draw(Player[2]);
+		gameWindow.draw(Player[4]);
 		gameWindow.draw(wallsLeft[0]);
 		gameWindow.draw(wallsLeft[2]);
 		if (gameMode == FOURPLAYERS)
@@ -733,7 +777,7 @@ bool changeMatrixPos(Vector2i &playerPosMatrix, Vector2i player2PosMatrix, bool 
 	return false;
 }
 
-int changeMatrixPos4Players(Vector2i playerPosMatrix[4], int playerTurn, bool boardMatrix[17][17], int direction)
+int changeMatrixPos4Players(Vector2i playerPosMatrix[4], short playerTurn, bool boardMatrix[17][17], int direction)
 {
 	Vector2i nextPos = playerPosMatrix[playerTurn];
 	switch (direction)
@@ -766,6 +810,8 @@ int changeMatrixPos4Players(Vector2i playerPosMatrix[4], int playerTurn, bool bo
 				playerPosMatrix[playerTurn] = nextPos;
 				return 1;
 			}
+			else if (isAbleToMove(boardMatrix, tempPos, direction) && !freeSpace(playerPosMatrix, nextPos, direction, FOURPLAYERS))
+				return -1;
 			else if (!isAbleToMove(boardMatrix, tempPos, direction))
 				return -1;
 			else return 0;
@@ -780,10 +826,7 @@ bool isSpriteClicked(Sprite Wall, RenderWindow &Window)
 		&& mousePos.y > Wall.getPosition().y && mousePos.y < Wall.getPosition().y + Wall.getGlobalBounds().height)
 	{
 		if (Mouse::isButtonPressed(Mouse::Left))
-		{
-			printf("Wall clicked!\n");
 			return true;
-		}
 		return false;
 	}
 	return false;
@@ -794,10 +837,7 @@ bool isBoardClicked(RenderWindow &Window, Event event)
 	Vector2i mousePos = Mouse::getPosition(Window);
 	if (event.type == Event::MouseButtonReleased && event.mouseButton.button == sf::Mouse::Left
 		&& mousePos.x >= 26 && mousePos.x <= 705 && mousePos.y >= 26 && mousePos.y <= 705)
-	{
-		printf("Board Clicked\n");
 		return true;
-	}
 	return false;
 }
 
@@ -856,7 +896,7 @@ bool isAllowedToPlaceWall(bool boardMatrix[17][17], Vector2i prediction, bool wa
 	return true;
 }
 
-bool pressedToMove(int direction, int playerTurn, bool gameMode, Event event)
+bool pressedToMove(int direction, short playerTurn, bool gameMode, Event event)
 {
 	switch (direction)
 	{
@@ -888,7 +928,7 @@ bool pressedToMove(int direction, int playerTurn, bool gameMode, Event event)
 	}
 }
 
-void searchRoute(bool boardMatrix[17][17], int playerY, int playerX, int playerTurn, int &result, int visited[17][17])
+void searchRoute(bool boardMatrix[17][17], int playerY, int playerX, short playerTurn, int &result, int visited[17][17])
 {
 	if (result == 0)
 	{
@@ -935,7 +975,7 @@ void createTemporaryWall(bool boardMatrix[17][17], Vector2i WallPrediction, bool
 	}
 }
 
-void changePlayerTurn(short &playerTurn, bool gameMode)
+void changePlayerTurn(short &playerTurn, bool gameMode, Sprite &Player, Texture PlayerTexture[4], RenderWindow & window)
 {
 	if (gameMode == TWOPLAYERS)
 	{
@@ -949,6 +989,7 @@ void changePlayerTurn(short &playerTurn, bool gameMode)
 		if (playerTurn == 4)
 			playerTurn = 0;
 	}
+	Player.setTexture(PlayerTexture[playerTurn]);
 }
 
 void emptyMatrix(int matrix[17][17])
@@ -958,7 +999,7 @@ void emptyMatrix(int matrix[17][17])
 			matrix[i][j] = 0;
 }
 
-int oppositePlayer(int playerTurn, bool gameMode)
+int oppositePlayer(short playerTurn, bool gameMode)
 {
 	if (gameMode == TWOPLAYERS)
 	{
@@ -974,7 +1015,7 @@ int oppositePlayer(int playerTurn, bool gameMode)
 	}
 }
 
-bool modifyWaitForInput(bool gameMode, int playerTurn, Vector2i playerPosMatrix[4], bool boardMatrix[17][17], int direction)
+bool modifyWaitForInput(bool gameMode, short playerTurn, Vector2i playerPosMatrix[4], bool boardMatrix[17][17], int direction)
 {
 	Vector2i playerPosMatrixOld = playerPosMatrix[playerTurn];
 	if (gameMode == TWOPLAYERS)
@@ -1085,28 +1126,4 @@ bool freeSpace(Vector2i playerPosMatrix[4], Vector2i nextPos, int direction, boo
 			return false;
 	}
 	return true;
-}
-
-void updateWallsLeft(String amount)
-{
-	if (amount == "10")
-		amount == "9";
-	else if (amount == "9")
-		amount == "8";
-	else if (amount == "8")
-		amount == "7";
-	else if (amount == "7")
-		amount == "6";
-	else if (amount == "6")
-		amount == "5";
-	else if (amount == "5")
-		amount == "4";
-	else if (amount == "4")
-		amount == "3";
-	else if (amount == "3")
-		amount == "2";
-	else if (amount == "2")
-		amount == "1";
-	else if (amount == "1")
-		amount == "0";
 }

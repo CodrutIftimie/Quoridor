@@ -1,0 +1,23 @@
+﻿  Source.cpp
+Source.cpp(100): warning C4244: 'argument': conversion from 'time_t' to 'unsigned int', possible loss of data
+Source.cpp(152): warning C4018: '<': signed/unsigned mismatch
+Source.cpp(537): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
+Source.cpp(538): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
+Source.cpp(580): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+Source.cpp(631): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
+Source.cpp(632): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
+Source.cpp(634): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+Source.cpp(664): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
+Source.cpp(665): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
+Source.cpp(667): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+Source.cpp(669): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+Source.cpp(678): warning C4018: '<': signed/unsigned mismatch
+Source.cpp(680): warning C4018: '<': signed/unsigned mismatch
+Source.cpp(682): warning C4018: '<': signed/unsigned mismatch
+Source.cpp(684): warning C4018: '<': signed/unsigned mismatch
+Source.cpp(740): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+  Generating code
+d:\c++\quoridor\quoridor\source.cpp(820): warning C4715: 'changeMatrixPos4Players': not all control paths return a value
+  All 157 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  Finished generating code
+  Quoridor.vcxproj -> D:\C++\Quoridor\Release\Quoridor.exe
